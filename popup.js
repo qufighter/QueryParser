@@ -16,7 +16,10 @@ function popOut(){
 }
 
 function doEncodeURIComponent(s){
-	return s; //optional encodeURIComponent(s);
+	if( document.getElementById('encodeComponents').checked ){
+		return encodeURIComponent(s);
+	}
+	return s;
 }
 
 function doDecodeURIComponent(s){
@@ -137,9 +140,11 @@ function init(url){
 	var queryParts,qKeyVal,qKeyValElms=[],hashElms=[],hash,qDelim='?',i,l;
 
 	var parts = url.split('#');
-	hash = parts[1] || '';
+	hash = parts[1] ? parts.slice(1).join('#') : ''; // "#" seems allowable in the hash part
 	parts = parts[0].split('?');
-
+	if( parts.length > 2 ){
+		parts[1] = parts.slice(1).join('?'); // "?" is allowed anywhere in the query part (name or value)
+	}
 
 	var url = parts[0];
 	var query = parts[1];
@@ -149,6 +154,9 @@ function init(url){
 		queryParts = query.split('&');
 		for( i=0,l=queryParts.length;i<l;i++ ){
 			qKeyVal = queryParts[i].split('=');
+			if( qKeyVal.length > 2 ){
+				qKeyVal[1] = qKeyVal.slice(1).join('='); // "=" is allowed anywhere in a query value
+			}
 			qKeyValElms.push(
 				Cr.elm('div',{class:'qrow'},row(qDelim,qKeyVal[0],qKeyVal[1]))
 			);
@@ -158,7 +166,7 @@ function init(url){
 
 	hashElms.push(
 		Cr.elm('label',{},[
-			Cr.elm('span',{title:'Location Hash'},[Cr.txt('#')]),
+			Cr.elm('span',{title:'Fragment'},[Cr.txt('#')]),
 			Cr.elm('input',{id:'hash',value:doDecodeURIComponent(hash)})
 		])
 	);
@@ -177,7 +185,10 @@ function init(url){
 			Cr.elm('input',{title:'Seperate window',type:'button',class:'pop',value:'Popout',events:['click',popOut]})
 			:
 			Cr.elm('a',{events:['click',revealTab],class:'reveal link',href:'#'},[Cr.txt('Reveal Tab')]),
-		Cr.elm('input',{type:'button',class:'go',value:'Get',events:['click',navigate]})
+		Cr.elm('input',{type:'button',class:'go',value:'Get',events:['click',navigate]}),
+		Cr.elm('label',{title:'Encode Query Values',class:'go'},[
+			Cr.elm('input',{type:'checkbox',id:'encodeComponents'})
+		])
 	],document.body);
 }
 
