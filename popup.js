@@ -72,11 +72,11 @@ function revealTab(ev){
 
 function row(qDelim,key,val){
 	return  [
-		Cr.elm('label',{},[
+		Cr.elm('label',{class:'key'},[
 			Cr.elm('span',{title:'Query Key'},[Cr.txt(qDelim)]),
 			Cr.elm('input',{class:'key',value:doDecodeURIComponent(key)})
 		]),
-		Cr.elm('label',{},[
+		Cr.elm('label',{class:'value'},[
 			Cr.elm('span',{title:'Query Value'},[Cr.txt('=')]),
 			Cr.elm('input',{class:'val',value:doDecodeURIComponent(val)})
 		]),
