@@ -74,14 +74,39 @@ function row(qDelim,key,val){
 	return  [
 		Cr.elm('label',{class:'key'},[
 			Cr.elm('span',{title:'Query Key'},[Cr.txt(qDelim)]),
-			Cr.elm('input',{class:'key',value:doDecodeURIComponent(key)})
+			Cr.elm('input',{class:'key',value:doDecodeURIComponent(key),events:['keyup',queryKeyChange]})
 		]),
 		Cr.elm('label',{class:'value'},[
 			Cr.elm('span',{title:'Query Value'},[Cr.txt('=')]),
-			Cr.elm('input',{class:'val',value:doDecodeURIComponent(val)})
+			Cr.elm('input',{class:'val',value:doDecodeURIComponent(val),events:['keyup',queryValChange]})
 		]),
 		Cr.elm('a',{class:'link',title:'Remove Parameter',events:['click',removeRow]},[Cr.txt('-')])
 	];
+}
+
+function updateKeyValueFromArr(key, val, arr){
+	key.value = arr[0], val.value = arr[1];
+}
+
+function queryKeyChange(ev){
+	var key = ev.target;
+	var val = key.parentNode.nextSibling.querySelector('input');
+	if( val.value === '' && key.value.indexOf('=') > 0 ){
+		var parts = key.value.split('=');
+		updateKeyValueFromArr(key, val, parts);
+		val.select();
+	}
+}
+
+function queryValChange(ev){
+	var val = ev.target;
+	var key = val.parentNode.previousSibling.querySelector('input');
+	if( key.value === '' ){
+		var parts = val.value.split('=');
+		if( parts.length > 1 && parts[1].length > 0 ){
+			updateKeyValueFromArr(key, val, parts);
+		}
+	}
 }
 
 function addRow(ev){
