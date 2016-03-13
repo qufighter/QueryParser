@@ -26,6 +26,7 @@ function doDecodeURIComponent(s){
 	return decodeURIComponent(s);
 }
 
+//go button
 function navigate(ev){
 	var oUrl='',i,l;
 	if( document.getElementById('uri') ){
@@ -74,17 +75,22 @@ function row(qDelim,key,val){
 	return  [
 		Cr.elm('label',{class:'key'},[
 			Cr.elm('span',{title:'Query Key'},[Cr.txt(qDelim)]),
-			Cr.elm('input',{class:'key',value:doDecodeURIComponent(key),events:['keyup',queryKeyChange]})
+			Cr.elm('input',{class:'key',value:doDecodeURIComponent(key),events:[['keyup',queryKeyChange],['change',queryKeyChange]]})
 		]),
 		Cr.elm('label',{class:'value'},[
 			Cr.elm('span',{title:'Query Value'},[Cr.txt('=')]),
-			Cr.elm('input',{class:'val',value:doDecodeURIComponent(val),events:['keyup',queryValChange]})
+			Cr.elm('input',{class:'val',value:doDecodeURIComponent(val),events:[['keyup',queryValChange],['change',queryValChange]]})
 		]),
 		Cr.elm('a',{class:'link',title:'Remove Parameter',events:['click',removeRow]},[Cr.txt('-')])
 	];
 }
 
 function updateKeyValueFromArr(key, val, arr){
+	if( arr[1].indexOf('&') && arr.length > 2 ){
+		var QS = arr.slice(1).join('=').split('&');
+		arr[1] = QS.shift();
+		document.getElementById('query_area').appendChild(Cr.frag(parseQuery(QS.join('&')).qsElmArr));
+	}
 	key.value = arr[0], val.value = arr[1];
 }
 
@@ -161,8 +167,27 @@ function clickElms(ev){
 		ev.target.nextSibling.select();
 	}
 }
+
+var iqsDelim='?';
+function parseQuery(query){
+	var retKvps = [], qKeyValElms=[], qKeyVal;
+	var queryParts = query.split('&');
+	for( i=0,l=queryParts.length;i<l;i++ ){
+		qKeyVal = queryParts[i].split('=');
+		if( qKeyVal.length > 2 ){
+			qKeyVal[1] = qKeyVal.slice(1).join('='); // "=" is allowed anywhere in a query value
+		}
+		qKeyValElms.push(
+			Cr.elm('div',{class:'qrow'},row(iqsDelim,qKeyVal[0],qKeyVal[1]))
+		);
+		retKvps.push(qKeyVal);
+		iqsDelim='&';
+	}
+	return {qsArr:retKvps, qsElmArr: qKeyValElms}
+}
+
 function init(url){
-	var queryParts,qKeyVal,qKeyValElms=[],hashElms=[],hash,qDelim='?',i,l;
+	var qKeyValElms=null,hashElms=[],hash,i,l;
 
 	var parts = url.split('#');
 	hash = parts[1] ? parts.slice(1).join('#') : ''; // "#" seems allowable in the hash part
@@ -175,18 +200,7 @@ function init(url){
 	var query = parts[1];
 	
 	if( query ){
-
-		queryParts = query.split('&');
-		for( i=0,l=queryParts.length;i<l;i++ ){
-			qKeyVal = queryParts[i].split('=');
-			if( qKeyVal.length > 2 ){
-				qKeyVal[1] = qKeyVal.slice(1).join('='); // "=" is allowed anywhere in a query value
-			}
-			qKeyValElms.push(
-				Cr.elm('div',{class:'qrow'},row(qDelim,qKeyVal[0],qKeyVal[1]))
-			);
-			qDelim='&';
-		}
+		qKeyValElms = parseQuery(query).qsElmArr;
 	}
 
 	hashElms.push(
@@ -200,10 +214,10 @@ function init(url){
 		Cr.elm('label',{},[
 			Cr.elm('span',{title:'Url Path'},[Cr.txt(nbsp)]),
 			Cr.elm('input',{id:'uri',value:doDecodeURIComponent(url)}),
-			Cr.elm('a',{class:'link',title:'Expand URL Pieces',events:['click',expandUrl]},[Cr.txt('+')])
+			Cr.elm('a',{class:'link',title:'Expand URL Pieces',events:['click',expandUrl]},[Cr.txt('\u224D')])
 		]),
 		Cr.elm('div',{id:'query_area'},qKeyValElms),
-		Cr.elm('div',{id:'qctrl'},[Cr.elm('a',{events:['click',addRow],title:'Add Query Param',class:'reveal link',href:'#'},[Cr.txt('+query')])]),
+		Cr.elm('div',{id:'qctrl'},[Cr.elm('a',{events:['click',addRow],title:'Add Query Param',class:'reveal link',href:'#'},[Cr.txt('+Query')])]),
 		Cr.elm('div',{id:'hash_area'},hashElms),
 		Cr.txt(nbsp),
 		!popoutMode?
@@ -228,6 +242,10 @@ document.addEventListener('DOMContentLoaded', function () {
 	}else{
 		q.currentWindow=true;
 	}
+
+	document.addEventListener('keyup', function(ev){
+		if( ev.keyCode == 13) navigate(ev);
+	});
 
 	chrome.tabs.query(q, function(tabs){
 		tabid=tabs[0].id;
