@@ -1,5 +1,6 @@
 var tabid,winid;
 var nbsp='\u00A0';
+var xcellController=null;
 
 // tab index is supported by href=# so be sure to ev.preventDefault()
 
@@ -73,13 +74,13 @@ function revealTab(ev){
 
 function row(qDelim,key,val){
 	return  [
-		Cr.elm('label',{class:'key'},[
+		Cr.elm('label',{class:'key xcellcell'},[
 			Cr.elm('span',{title:'Query Key'},[Cr.txt(qDelim)]),
-			Cr.elm('input',{class:'key',value:doDecodeURIComponent(key),events:[['keyup',queryKeyChange],['change',queryKeyChange]]})
+			Cr.elm('input',{class:'key xcellinput',value:doDecodeURIComponent(key),events:[['keyup',queryKeyChange],['change',queryKeyChange]]})
 		]),
-		Cr.elm('label',{class:'value'},[
+		Cr.elm('label',{class:'value xcellcell'},[
 			Cr.elm('span',{title:'Query Value'},[Cr.txt('=')]),
-			Cr.elm('input',{class:'val',value:doDecodeURIComponent(val),events:[['keyup',queryValChange],['change',queryValChange]]})
+			Cr.elm('input',{class:'val xcellinput',value:doDecodeURIComponent(val),events:[['keyup',queryValChange],['change',queryValChange]]})
 		]),
 		Cr.elm('a',{class:'link',title:'Remove Parameter',events:['click',removeRow]},[Cr.txt('-')])
 	];
@@ -118,6 +119,7 @@ function queryValChange(ev){
 function addRow(ev){
 	Cr.elm('div',{class:'qrow'},row(document.getElementById('query_area').childNodes.length ? '&':'?','',''),document.getElementById('query_area'));
 	ev.preventDefault();
+	if(xcellController) xcellController.rebuildIndex();
 }
 
 function removeRow(ev){
@@ -210,20 +212,23 @@ function init(url){
 		])
 	);
 
-	Cr.elm('div',{events:[['mouseover',mouseOverElms],['click',clickElms]]},[
+	var outerDiv = Cr.elm('div',{class:"sheet",events:[['mouseover',mouseOverElms],['click',clickElms]]},[
 		Cr.elm('label',{},[
 			Cr.elm('span',{title:'Url Path'},[Cr.txt(nbsp)]),
 			Cr.elm('input',{id:'uri',value:doDecodeURIComponent(url)}),
 			Cr.elm('a',{class:'link',title:'Expand URL Pieces',events:['click',expandUrl]},[Cr.txt('\u224D')])
 		]),
 		Cr.elm('div',{id:'query_area'},qKeyValElms),
-		Cr.elm('div',{id:'qctrl'},[Cr.elm('a',{events:['click',addRow],title:'Add Query Param',class:'reveal link',href:'#'},[Cr.txt('+Query')])]),
+		Cr.elm('div',{id:'qctrl'},[
+			Cr.elm('a',{events:['click',addRow],title:'Add Query Param',class:'rfloat link',href:'#'},[Cr.txt('+Query')]),
+			Cr.elm('a',{events:['click',xcellMode],title:'Xcellify to copy and paste several tab & newline delimited cells',class:'rfloat link',href:'#'},[Cr.txt('\u205C')])
+		]),
 		Cr.elm('div',{id:'hash_area'},hashElms),
 		Cr.txt(nbsp),
 		!popoutMode?
 			Cr.elm('input',{title:'Seperate window',type:'button',class:'pop',value:'Popout',events:['click',popOut]})
 			:
-			Cr.elm('a',{events:['click',revealTab],class:'reveal link',href:'#'},[Cr.txt('Reveal Tab')]),
+			Cr.elm('a',{events:['click',revealTab],class:'rfloat link',href:'#'},[Cr.txt('Reveal Tab')]),
 		Cr.elm('input',{type:'button',class:'go',value:'Get',events:['click',navigate]}),
 		Cr.elm('label',{title:'Encode Query Values',class:'go'},[
 			Cr.elm('input',{type:'checkbox',id:'encodeComponents'})
@@ -231,6 +236,25 @@ function init(url){
 	],document.body);
 }
 
+
+function xcellMode(ev){
+	if( xcellController ){
+		xcellController.destroy();
+		xcellController = null;
+		ev.target.textContent = "\u205C";
+		return;
+	}
+	xcellController = new Xcellify({
+		containerElm: document.querySelector('.sheet'), 		// scope event listening and processing to a specific context, you can think <table>
+		// selectors must be valid in querySelectorAll, just add a unique class to cells and rows to identify them
+		cellSelector: '.xcellcell', 		// must be unique to cells that contain > input.cellInputClassName (i.e not headings), (think 'td.xcellcell')
+		rowSelector: '.qrow',   			// must be unique to rows that contain the cells input.cellInputClassName (think 'tr.xcellrow', currently mandatory see rebuildIndex)
+		cellInputClassName: 'xcellinput', 	// input elements that have the class will be the source of keyboard and click events
+		headingClassName: 'xcellheading',   // supports col and row headings, heading must be within a .rowSelector - except for top row onlly one allowed per row
+	});
+	ev.target.textContent = "\u2713";
+	//ev.target.parentNode.removeChild(ev.target);
+}
 
 var popoutMode=false;
 document.addEventListener('DOMContentLoaded', function () {
