@@ -19,6 +19,8 @@ var Xcellify = function(startupOptions){
   this.buttonBar = null;
   this.skipInvisibleCells = true;
   this.singleCellEditingMode = false;
+  this.delimitCells = "\t";
+  this.delimitRows = "\n";
   this.hasFocus = 0;
 
   this.resetState = function(){
@@ -53,8 +55,8 @@ var Xcellify = function(startupOptions){
   };
 
   this.destroy = function(){ // not needed as long as container element stays the same and remains in the DOM, in which case you may call rebuildIndex if the table changes
-    //this.detachListeners();
-    //this.destroyButtonBar();
+    this.hideCurrentSelection();
+    this.detachListeners();
     this.resetState();
   };
 
@@ -165,18 +167,33 @@ var Xcellify = function(startupOptions){
         undo: this.buttonBar.querySelector('.undo'),
         redo: this.buttonBar.querySelector('.redo')
       };
-      this.buttonBar.querySelector('.undo').addEventListener('click', this.historyUtils.undo.bind(this.historyUtils));
-      this.buttonBar.querySelector('.redo').addEventListener('click', this.historyUtils.redo.bind(this.historyUtils));
+      this.attachListener(this.buttonBar.querySelector('.undo'), 'click', this.historyUtils.undo.bind(this.historyUtils));
+      this.attachListener(this.buttonBar.querySelector('.redo'), 'click', this.historyUtils.redo.bind(this.historyUtils));
     }
   };
 
   this.attachListeners = function(){ // do not call more than once
-    this.containerElm.addEventListener('mousedown', this.mouseDownContainer.bind(this));
-    this.containerElm.addEventListener('mouseup', this.mouseUpContainer.bind(this));
-    this.containerElm.addEventListener('mouseover', this.mouseMoveContainer.bind(this));
-    document.addEventListener('keydown', this.keyboardDnEvents.bind(this));
-    document.addEventListener('keyup', this.keyboardUpEvents.bind(this));
-    document.addEventListener('focus', this.determineIfFocused.bind(this), true);
+    this.attachListener(this.containerElm, 'mousedown', this.mouseDownContainer.bind(this));
+    this.attachListener(this.containerElm, 'mouseup', this.mouseUpContainer.bind(this));
+    this.attachListener(this.containerElm, 'mouseover', this.mouseMoveContainer.bind(this));
+    this.attachListener(document, 'keydown', this.keyboardDnEvents.bind(this));
+    this.attachListener(document, 'keyup', this.keyboardUpEvents.bind(this));
+    this.attachListener(document, 'focus', this.determineIfFocused.bind(this), true);
+  };
+
+  this._attachedListeners = [];
+  this.attachListener = function(element, evName, fn, cap){
+    cap = cap || false;
+    element.addEventListener(evName, fn, cap);
+    this._attachedListeners.push([element, evName, fn, cap]);
+  }
+
+  this.detachListeners = function(){
+    for( var l=0,li,ln=this._attachedListeners.length; l<ln; l++ ){
+      li = this._attachedListeners[l];
+      li[0].removeEventListener(li[1],li[2],li[3]);
+    }
+    this._attachedListeners = [];
   };
 
   this.determineIfFocused = function(ev){
@@ -545,9 +562,9 @@ var Xcellify = function(startupOptions){
           clipb = '';
       for( y=start.y, yl=end.y+1; y<yl; y++ ){
         for( x=start.x, xl=end.x; x<xl; x++ ){
-          clipb += this.tableCells[y][x].value+"\t";
+          clipb += this.tableCells[y][x].value+this.delimitCells;
         }
-        clipb += this.tableCells[y][x].value+"\n"; // last element in row gets \n instead of \t
+        clipb += this.tableCells[y][x].value+this.delimitRows; // last element in row gets \n instead of \t
       }
       return clipb;
   };
@@ -597,12 +614,12 @@ var Xcellify = function(startupOptions){
 
   this.valuesPasted = function(v){
     var pasted = [];
-    var rows = v.split("\n"); // it should end with one \n followed by nothing
+    var rows = this.delimitRows ? v.split(this.delimitRows) : [v]; // it should end with one \n followed by nothing
     var rowCount = 0;
     for( r=0, x=1, rl=rows.length; r<rl; r++,x++ ){
       if( rows[r].length < 1 && x == rl ) continue; // this was to capture last row...
       pasted[r] = [];
-      cells = rows[r].split("\t");
+      cells = this.delimitCells? rows[r].split(this.delimitCells) : [rows[r]];
       for( c=0, cl=cells.length; c<cl; c++ ){
         pasted[r][c] = cells[c];
       }
@@ -617,9 +634,10 @@ var Xcellify = function(startupOptions){
 
     var selSize = this.selectionSize();
     if( selSize.total > 1 && (rowCount != selSize.y || cl != selSize.x) ){
-      if( this.selectionConfirmation(selSize, {x: cl, y: rowCount}) ){
-        pasted = this.replicatePaste(pasted, selSize);
-      }
+      var _this = this; // for convenience of over-ridign confirmation function...
+      this.selectionConfirmation(selSize, {x: cl, y: rowCount}, function(){
+        pasted = _this.replicatePaste(pasted, selSize);
+      });
     }
     if( pasted[0] ){
       this.hideCurrentSelection();
@@ -642,8 +660,10 @@ var Xcellify = function(startupOptions){
     return pasted;
   };
 
-  this.selectionConfirmation = function(selSize, clipSize){ // override
-    return confirm('Selection size ('+selSize.x+', '+selSize.y+') mismatches clipboard size ('+clipSize.x+', '+clipSize.y+')\n\nPaste will continue, replicate clipboard contents across selection?');
+  this.selectionConfirmation = function(selSize, clipSize, cbf){ // override
+    if( confirm('Selection size ('+selSize.x+', '+selSize.y+') mismatches clipboard size ('+clipSize.x+', '+clipSize.y+')\n\nPaste will continue, replicate clipboard contents across selection?') ){
+      cbf();
+    }
   };
 
   this.getAllCellValues = function(gridToRead){
@@ -663,7 +683,10 @@ var Xcellify = function(startupOptions){
         cell = gridToSet[y+start.y];
         if( cell ){
           cell = cell[x+start.x];
-          if( cell ) cell.value = values[y][x];
+          if( cell ){
+            cell.value = values[y][x];
+            cell.dispatchEvent(new Event('change'));
+          }
         }
       }
     }

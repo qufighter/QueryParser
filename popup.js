@@ -1,6 +1,7 @@
 var tabid,winid;
 var nbsp='\u00A0';
 var xcellController=null;
+var iqsDelim='?';
 
 // tab index is supported by href=# so be sure to ev.preventDefault()
 
@@ -72,15 +73,30 @@ function revealTab(ev){
 	ev.preventDefault();
 }
 
+function rebuildFromTab(ev){
+	chrome.tabs.get(tabid, function(tab){
+		resetAll();
+		init(tab.url);
+	});
+
+	ev.preventDefault();
+}
+
 function row(qDelim,key,val){
 	return  [
-		Cr.elm('label',{class:'key xcellcell'},[
+		Cr.elm('label',{class:'qmode xcellcell'},[
 			Cr.elm('span',{title:'Query Key'},[Cr.txt(qDelim)]),
-			Cr.elm('input',{class:'key xcellinput',value:doDecodeURIComponent(key),events:[['keyup',queryKeyChange],['change',queryKeyChange]]})
+			Cr.elm('input',{type:'hidden',class:'qmode xcellinput',value:qDelim})
 		]),
-		Cr.elm('label',{class:'value xcellcell'},[
+		Cr.elm('label',{class:'key xcellcell qsxcellcell'},[
+			Cr.elm('input',{class:'key xcellinput qsxcellinput',value:doDecodeURIComponent(key),events:[['keyup',queryKeyChange],['change',queryKeyChange]]})
+		]),
+		Cr.elm('label',{class:'eq xcellcell'},[
 			Cr.elm('span',{title:'Query Value'},[Cr.txt('=')]),
-			Cr.elm('input',{class:'val xcellinput',value:doDecodeURIComponent(val),events:[['keyup',queryValChange],['change',queryValChange]]})
+			Cr.elm('input',{type:'hidden',class:'eq xcellinput',value:'='})
+		]),
+		Cr.elm('label',{class:'value xcellcell qsxcellcell'},[
+			Cr.elm('input',{class:'val xcellinput qsxcellinput',value:doDecodeURIComponent(val),events:[['keyup',queryValChange],['change',queryValChange]]})
 		]),
 		Cr.elm('a',{class:'link',title:'Remove Parameter',events:['click',removeRow]},[Cr.txt('-')])
 	];
@@ -93,11 +109,12 @@ function updateKeyValueFromArr(key, val, arr){
 		document.getElementById('query_area').appendChild(Cr.frag(parseQuery(QS.join('&')).qsElmArr));
 	}
 	key.value = arr[0], val.value = arr[1];
+	xcellRebuildIndex();
 }
 
 function queryKeyChange(ev){
 	var key = ev.target;
-	var val = key.parentNode.nextSibling.querySelector('input');
+	var val = key.parentNode.parentNode.querySelector('input.val');
 	if( val.value === '' && key.value.indexOf('=') > 0 ){
 		var parts = key.value.split('=');
 		updateKeyValueFromArr(key, val, parts);
@@ -107,7 +124,7 @@ function queryKeyChange(ev){
 
 function queryValChange(ev){
 	var val = ev.target;
-	var key = val.parentNode.previousSibling.querySelector('input');
+	var key = val.parentNode.parentNode.querySelector('input.key');
 	if( key.value === '' ){
 		var parts = val.value.split('=');
 		if( parts.length > 1 && parts[1].length > 0 ){
@@ -119,17 +136,19 @@ function queryValChange(ev){
 function addRow(ev){
 	Cr.elm('div',{class:'qrow'},row(document.getElementById('query_area').childNodes.length ? '&':'?','',''),document.getElementById('query_area'));
 	ev.preventDefault();
-	if(xcellController) xcellController.rebuildIndex();
+	xcellRebuildIndex();
 }
 
 function removeRow(ev){
 	ev.target.parentNode.parentNode.removeChild(ev.target.parentNode);
 	ev.preventDefault();
+	xcellRebuildIndex();
 }
 
 function removeUricomponent(ev){
 	ev.target.parentNode.parentNode.removeChild(ev.target.parentNode);
 	ev.preventDefault();
+	xcellRebuildIndex();
 }
 
 function expandUrl(ev){
@@ -142,14 +161,24 @@ function expandUrl(ev){
 	var delim = '';
 	var urls = url.split("/");
 	for( var i=0,l=urls.length; i<l; i++ ){
+		fragment.appendChild(
+			Cr.elm('label',{class:'xcellcell'},[
+				Cr.elm('span',{title:'Url Path'},[Cr.txt(delim)]),
+				Cr.elm('input',{type:'hidden',class:'xcellinput',value:delim})
+			])
+		);
 		if( !urls[i] ){
-			fragment.appendChild(Cr.elm('span',{title:'Url Path'},[Cr.txt(delim)]));
-			fragment.appendChild(Cr.elm('input',{class:'uricomponent',style:!urls[i]?'display:none;':'',value:doDecodeURIComponent(urls[i])}));
+			fragment.appendChild(
+				Cr.elm('label',{class:'xcellcell'},[
+					//Cr.elm('span',{title:'Url Path'},[Cr.txt(delim)]),
+					Cr.elm('input',{class:'uricomponent xcellinput',style:!urls[i]?'display:none;':'',value:(urls[i])})
+				])
+			);
 			continue;
 		}
-		fragment.appendChild(Cr.elm('span',{},[Cr.elm('label',{},[
-			Cr.elm('span',{title:'Url Path'},[Cr.txt(delim)]),
-			Cr.elm('input',{class:'uricomponent',style:!urls[i]?'display:none;':'',value:doDecodeURIComponent(urls[i])}),
+		fragment.appendChild(Cr.elm('span',{},[Cr.elm('label',{class:'xcellcell'},[
+			//Cr.elm('span',{title:'Url Path'},[Cr.txt(delim)]),
+			Cr.elm('input',{class:'uricomponent xcellinput',style:!urls[i]?'display:none;':'',value:doDecodeURIComponent(urls[i])}),
 			Cr.elm('a',{class:'link',title:'Remove',events:['click',removeUricomponent],href:'#'},[Cr.txt('-')]),
 			Cr.elm('br')
 		])]));
@@ -157,6 +186,7 @@ function expandUrl(ev){
 	}
 	dest.insertBefore(Cr.elm('div',{class:'wrap'},[fragment]), dest.firstChild);
 	ev.preventDefault();
+	xcellRebuildIndex();
 }
 
 function mouseOverElms(ev){
@@ -170,7 +200,6 @@ function clickElms(ev){
 	}
 }
 
-var iqsDelim='?';
 function parseQuery(query){
 	var retKvps = [], qKeyValElms=[], qKeyVal;
 	var queryParts = query.split('&');
@@ -186,6 +215,11 @@ function parseQuery(query){
 		iqsDelim='&';
 	}
 	return {qsArr:retKvps, qsElmArr: qKeyValElms}
+}
+
+function resetAll(){
+	iqsDelim='?';
+	Cr.empty(document.body);
 }
 
 function init(url){
@@ -206,54 +240,97 @@ function init(url){
 	}
 
 	hashElms.push(
-		Cr.elm('label',{},[
+		Cr.elm('label',{class:'xcellcell'},[
+			Cr.elm('input',{type:'hidden',class:'xcellinput',value:'#'})
+		])
+	);
+	hashElms.push(
+		Cr.elm('label',{class:'xcellcell'},[
 			Cr.elm('span',{title:'Fragment'},[Cr.txt('#')]),
-			Cr.elm('input',{id:'hash',value:doDecodeURIComponent(hash)})
+			Cr.elm('input',{id:'hash',class:'xcellinput',value:doDecodeURIComponent(hash)})
 		])
 	);
 
 	var outerDiv = Cr.elm('div',{class:"sheet",events:[['mouseover',mouseOverElms],['click',clickElms]]},[
-		Cr.elm('label',{},[
-			Cr.elm('span',{title:'Url Path'},[Cr.txt(nbsp)]),
-			Cr.elm('input',{id:'uri',value:doDecodeURIComponent(url)}),
-			Cr.elm('a',{class:'link',title:'Expand URL Pieces',events:['click',expandUrl]},[Cr.txt('\u224D')])
-		]),
-		Cr.elm('div',{id:'query_area'},qKeyValElms),
-		Cr.elm('div',{id:'qctrl'},[
-			Cr.elm('a',{events:['click',addRow],title:'Add Query Param',class:'rfloat link',href:'#'},[Cr.txt('+Query')]),
-			Cr.elm('a',{events:['click',xcellMode],title:'Xcellify to copy and paste several tab & newline delimited cells',class:'rfloat link',href:'#'},[Cr.txt('\u205C')])
-		]),
-		Cr.elm('div',{id:'hash_area'},hashElms),
-		Cr.txt(nbsp),
-		!popoutMode?
-			Cr.elm('input',{title:'Seperate window',type:'button',class:'pop',value:'Popout',events:['click',popOut]})
-			:
-			Cr.elm('a',{events:['click',revealTab],class:'rfloat link',href:'#'},[Cr.txt('Reveal Tab')]),
-		Cr.elm('input',{type:'button',class:'go',value:'Get',events:['click',navigate]}),
-		Cr.elm('label',{title:'Encode Query Values',class:'go'},[
-			Cr.elm('input',{type:'checkbox',id:'encodeComponents'})
+		Cr.elm('div',{class:'allrows'},[
+			Cr.elm('label',{class:'xcellcell'},[
+				Cr.elm('span',{title:'Url Path'},[Cr.txt(nbsp)]),
+				Cr.elm('input',{id:'uri',class:'xcellinput',value:doDecodeURIComponent(url)}),
+				Cr.elm('a',{class:'link',title:'Expand URL Pieces',events:['click',expandUrl]},[Cr.txt('\u224D')])
+			]),
+			Cr.elm('div',{id:'query_area'},qKeyValElms),
+			Cr.elm('div',{id:'qctrl'},[
+				Cr.elm('a',{events:['click',addRow],title:'Add Query Param',class:'rfloat link',href:'#'},[Cr.txt('+Query')]),
+				Cr.elm('span',{id:'xcellcontrols'},[
+					Cr.elm('a',{events:['click',xcellSelectAllConsecutiveMode],title:'Copy consecutive cells',class:'rfloat link',href:'#'},[Cr.txt('\u206C')]),
+					Cr.elm('a',{events:['click',xcellMode],title:'Xcellify query parameters to copy and paste several tab & newline delimited cells',class:'rfloat link',href:'#'},[Cr.txt('\u205C')])
+				]),
+				Cr.elm('a',{id:'donexcell',events:['click',doneXcell],title:'Return to normal mode',class:'rfloat link hidden',href:'#'},[Cr.txt('\u2713')])
+			]),
+			Cr.elm('div',{id:'hash_area'},hashElms),
+			Cr.txt(nbsp),
+			!popoutMode?
+				Cr.elm('input',{title:'Seperate window',type:'button',class:'pop',value:'Popout',events:['click',popOut]})
+				:
+				Cr.frag([
+					Cr.elm('input',{title:'Clear all fields and re-create with the current tab URL',type:'button',class:'pop',value:'Grab Tab Url',events:['click',rebuildFromTab]}),
+					Cr.elm('a',{events:['click',revealTab],class:'rfloat link',href:'#'},[Cr.txt('Reveal Tab')]),
+				]),
+			Cr.elm('input',{type:'button',class:'go',title:'Go http GET, like press return at the URL bar.',value:'Get',events:['click',navigate]}),
+			Cr.elm('label',{title:'Encode Query Values',class:'go'},[
+				Cr.elm('input',{type:'checkbox',id:'encodeComponents'})
+			])
 		])
 	],document.body);
 }
 
+function doneXcell(){
+	xcellController.destroy();
+	xcellController = null;
+	toggleXcellmodeBtnsOff();
+}
+
+function xcellRebuildIndex(){
+	if(xcellController) xcellController.rebuildIndex();
+}
+
+function xcellSelectAllConsecutiveMode(ev){
+	if( xcellController ) return doneXcell(); // should be impossible to reach here
+	xcellController = new Xcellify({
+		containerElm: document.querySelector('.sheet'),
+		cellSelector: '.xcellcell',
+		rowSelector: '.allrows',
+		cellInputClassName: 'xcellinput',
+		headingClassName: 'xcellheading',
+		skipInvisibleCells: false,
+		delimitCells: "",
+		delimitRows: "",
+		selectionConfirmation: function(selSize,clipSize,cbf){cbf();}
+	});
+	toggleXcellmodeBtnsOn();
+}
 
 function xcellMode(ev){
-	if( xcellController ){
-		xcellController.destroy();
-		xcellController = null;
-		ev.target.textContent = "\u205C";
-		return;
-	}
+	if( xcellController ) return doneXcell(); // should be impossible to reach here
 	xcellController = new Xcellify({
-		containerElm: document.querySelector('.sheet'), 		// scope event listening and processing to a specific context, you can think <table>
-		// selectors must be valid in querySelectorAll, just add a unique class to cells and rows to identify them
-		cellSelector: '.xcellcell', 		// must be unique to cells that contain > input.cellInputClassName (i.e not headings), (think 'td.xcellcell')
-		rowSelector: '.qrow',   			// must be unique to rows that contain the cells input.cellInputClassName (think 'tr.xcellrow', currently mandatory see rebuildIndex)
-		cellInputClassName: 'xcellinput', 	// input elements that have the class will be the source of keyboard and click events
-		headingClassName: 'xcellheading',   // supports col and row headings, heading must be within a .rowSelector - except for top row onlly one allowed per row
+		containerElm: document.querySelector('#query_area'),
+		cellSelector: '.qsxcellcell',
+		rowSelector: '.qrow',
+		cellInputClassName: 'qsxcellinput',
+		headingClassName: 'xcellheading',
+		selectionConfirmation: function(selSize,clipSize,cbf){cbf();}
 	});
-	ev.target.textContent = "\u2713";
-	//ev.target.parentNode.removeChild(ev.target);
+	toggleXcellmodeBtnsOn();
+}
+
+function toggleXcellmodeBtnsOn(){
+	document.getElementById('xcellcontrols').style.display='none';
+	document.getElementById('donexcell').style.display='inline';
+}
+
+function toggleXcellmodeBtnsOff(){
+	document.getElementById('xcellcontrols').style.display='inline';
+	document.getElementById('donexcell').style.display='none';
 }
 
 var popoutMode=false;
