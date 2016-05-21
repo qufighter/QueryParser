@@ -703,7 +703,9 @@ var Xcellify = function(startupOptions){
   };
 
   this.styleCells = function(start, end, backgroundStyle){
-    for( y=start.y,yl=end.y+1; y<yl; y++ ){
+    y=start.y, yl=end.y+1;
+    if( !this.tableCells[y] ) return;
+    for( ; y<yl; y++ ){
       for( x=start.x,xl=end.x+1; x<xl; x++ ){
         this.tableCells[y][x].style.background = backgroundStyle;
       }
@@ -711,7 +713,9 @@ var Xcellify = function(startupOptions){
   };
 
   this.styleEdges = function(start, end, borderStyle){
-    for( x=start.x, xl=end.x, y=start.y, yl=end.y; y<=yl; y++ ){
+    x=start.x, xl=end.x, y=start.y, yl=end.y;
+    if( !this.tableCellContainers[y] ) return;
+    for( ; y<=yl; y++ ){
       this.drawBorder(this.tableCellContainers[y][x], 'left', borderStyle);
       this.drawBorder(this.tableCellContainers[y][xl], 'right', borderStyle);
     }

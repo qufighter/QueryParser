@@ -189,6 +189,11 @@ function expandUrl(ev){
 	xcellRebuildIndex();
 }
 
+function dragOverElms(ev){
+	if( ev.target.type="button" ){
+		addRow(ev);
+	}
+}
 function mouseOverElms(ev){
 	// if( ev.target.nodeName == "INPUT" ){
 	// 	ev.target.select();
@@ -260,10 +265,10 @@ function init(url){
 			]),
 			Cr.elm('div',{id:'query_area'},qKeyValElms),
 			Cr.elm('div',{id:'qctrl'},[
-				Cr.elm('a',{events:['click',addRow],title:'Add Query Param',class:'rfloat link',href:'#'},[Cr.txt('+Query')]),
+				Cr.elm('a',{events:[['click',addRow]],dragable:true,title:'Add Query Param',class:'rfloat link',href:'#'},[Cr.txt('+Query')]),
 				Cr.elm('span',{id:'xcellcontrols'},[
-					Cr.elm('a',{events:['click',xcellSelectAllConsecutiveMode],title:'Copy consecutive cells',class:'rfloat link',href:'#'},[Cr.txt('\u206C')]),
-					Cr.elm('a',{events:['click',xcellMode],title:'Xcellify query parameters to copy and paste several tab & newline delimited cells',class:'rfloat link',href:'#'},[Cr.txt('\u205C')])
+					Cr.elm('a',{events:['click',xcellSelectAllConsecutiveMode],title:'Copy consecutive cells (not only query parameters)',class:'rfloat link',href:'#'},[Cr.txt('\u229F')]),
+					Cr.elm('a',{events:['click',xcellMode],title:'Xcellify query parameters to copy and paste several tab & newline delimited query parameters into a spreadsheet.',class:'rfloat link',href:'#'},[Cr.txt('\u229E')])
 				]),
 				Cr.elm('a',{id:'donexcell',events:['click',doneXcell],title:'Return to normal mode',class:'rfloat link hidden',href:'#'},[Cr.txt('\u2713')])
 			]),
@@ -276,7 +281,7 @@ function init(url){
 					Cr.elm('input',{title:'Clear all fields and re-create with the current tab URL',type:'button',class:'pop',value:'Grab Tab Url',events:['click',rebuildFromTab]}),
 					Cr.elm('a',{events:['click',revealTab],class:'rfloat link',href:'#'},[Cr.txt('Reveal Tab')]),
 				]),
-			Cr.elm('input',{type:'button',class:'go',title:'Go http GET, like press return at the URL bar.',value:'Get',events:['click',navigate]}),
+			Cr.elm('input',{type:'button',class:'go',title:'Go http GET, like press return at the URL bar.',value:'Get',events:[['click',navigate],['dragover',dragOverElms]]}),
 			Cr.elm('label',{title:'Encode Query Values',class:'go'},[
 				Cr.elm('input',{type:'checkbox',id:'encodeComponents'})
 			])
