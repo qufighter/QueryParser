@@ -267,8 +267,8 @@ function init(url){
 			Cr.elm('div',{id:'qctrl'},[
 				Cr.elm('a',{events:[['click',addRow]],dragable:true,title:'Add Query Param',class:'rfloat link',href:'#'},[Cr.txt('+Query')]),
 				Cr.elm('span',{id:'xcellcontrols'},[
-					Cr.elm('a',{events:['click',xcellSelectAllConsecutiveMode],title:'Copy consecutive cells (not only query parameters)',class:'rfloat link',href:'#'},[Cr.txt('\u229F')]),
-					Cr.elm('a',{events:['click',xcellMode],title:'Xcellify query parameters to copy and paste several tab & newline delimited query parameters into a spreadsheet.',class:'rfloat link',href:'#'},[Cr.txt('\u229E')])
+					Cr.elm('a',{events:['click',xcellSelectAllConsecutiveMode],title:'Select consecutive cells (not only query parameters)',class:'rfloat link',href:'#'},[Cr.txt('\u229F')]),
+					Cr.elm('a',{events:['click',xcellMode],title:'Xcellify query parameters to select, copy and paste several tab & newline delimited query parameters into a spreadsheet.',class:'rfloat link',href:'#'},[Cr.txt('\u229E')])
 				]),
 				Cr.elm('a',{id:'donexcell',events:['click',doneXcell],title:'Return to normal mode',class:'rfloat link hidden',href:'#'},[Cr.txt('\u2713')])
 			]),

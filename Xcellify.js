@@ -208,7 +208,7 @@ var Xcellify = function(startupOptions){
 
   this.keyboardDnEvents = function(ev){
     if( !this.hasFocus || !this.elementIsVisible(this.containerElm) || this.totalDimensions.x < 0 || this.totalDimensions.y < 0 ) return;
-    if( ev.metaKey ){ // command/control
+    if( ev.metaKey || ev.ctrlKey ){ // command/control
       switch(ev.keyCode){
         case 67: // C key - Copy
           this.captureCellCopy(ev);
