@@ -20,6 +20,8 @@ function popOut(){
 function doEncodeURIComponent(s){
 	if( document.getElementById('encodeComponents').checked ){
 		return encodeURIComponent(s);
+	}else if(s.indexOf('&') > -1){
+		return encodeURIComponent(s);
 	}
 	return s;
 }
@@ -29,7 +31,7 @@ function doDecodeURIComponent(s){
 }
 
 //go button
-function navigate(ev){
+function navigate(ev, newWindow){
 	var oUrl='',i,l;
 	if( document.getElementById('uri') ){
 		oUrl+=document.getElementById('uri').value;
@@ -61,7 +63,18 @@ function navigate(ev){
 	}
 
 	console.log(oUrl);
-	chrome.tabs.update(tabid,{url:oUrl,active:true});
+	if( newWindow ){
+		chrome.tabs.create({url:oUrl,active:true});
+	}else{
+		chrome.tabs.update(tabid,{url:oUrl,active:true});
+	}
+}
+
+function possiblyNavigate(ev){
+	if( ev.which == 2 ){ // middle mouse
+		ev.preventDefault();
+		navigate(ev, true);
+	}
 }
 
 function revealTab(ev){
@@ -281,7 +294,7 @@ function init(url){
 					Cr.elm('input',{title:'Clear all fields and re-create with the current tab URL',type:'button',class:'pop',value:'Grab Tab Url',events:['click',rebuildFromTab]}),
 					Cr.elm('a',{events:['click',revealTab],class:'rfloat link',href:'#'},[Cr.txt('Reveal Tab')]),
 				]),
-			Cr.elm('input',{type:'button',class:'go',title:'Go http GET, like press return at the URL bar.',value:'Get',events:[['click',navigate],['dragover',dragOverElms]]}),
+			Cr.elm('input',{type:'button',class:'go',title:'Go http GET, like press return at the URL bar.',value:'Get',events:[['click',navigate],['mouseup',possiblyNavigate],['dragover',dragOverElms]]}),
 			Cr.elm('label',{title:'Encode Query Values',class:'go'},[
 				Cr.elm('input',{type:'checkbox',id:'encodeComponents'})
 			])
