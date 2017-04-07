@@ -186,7 +186,7 @@ var Xcellify = function(startupOptions){
     cap = cap || false;
     element.addEventListener(evName, fn, cap);
     this._attachedListeners.push([element, evName, fn, cap]);
-  }
+  };
 
   this.detachListeners = function(){
     for( var l=0,li,ln=this._attachedListeners.length; l<ln; l++ ){
@@ -264,7 +264,7 @@ var Xcellify = function(startupOptions){
   this.triggerSelectAll = function(){
     var selSize = this.selectionSize();
     if( selSize.total == 1 ){
-      this.activeCell.select();
+      this.selectCell(this.activeCell);
       this.singleCellEditingMode = false;
       this.clipboardUtils.hideArea();
     }
@@ -284,14 +284,14 @@ var Xcellify = function(startupOptions){
         }
       }
       this.activeCell = this.tableCells[this.activeCellIndex.y][this.activeCellIndex.x];
-      this.activeCell.select();
+      this.selectCell(this.activeCell);
 
     }else{
       // if selections size is zero, move down one cell
       if( this.tableCells[this.activeCellIndex.y+1] ){
         this.activeCell = this.tableCells[this.activeCellIndex.y+1][this.activeCellIndex.x];
         this.activeCellIndex.y += 1;
-        this.activeCell.select();
+        this.selectCell(this.activeCell);
       }
     }
     if( !this.isDragging ) this.storeStateInHistory(); // in case we made a change and pressed return
@@ -310,8 +310,12 @@ var Xcellify = function(startupOptions){
     };
   };
 
+  this.selectCell = function(c){
+    if(c && typeof(c.select) == 'function') c.select();
+  };
+
   this.mouseDownContainer = function(ev){
-    if( ev.target == this.containerElm || ev.target.matches(this.rowSelector) ) return;
+    if( ev.target == this.containerElm || ev.target.matches(this.rowSelector) ) return; // TODO: any element between rowSelector and containerElm should also return
     var evcell = this.findAppropriateEventTarget(ev);
     if( !evcell ){
       this.hideCurrentSelection();
@@ -327,9 +331,9 @@ var Xcellify = function(startupOptions){
 
     if( this.hasClass(evcell, this.cellInputClassName) && evcell != ev.target ){ // clicked on the cell (borders), found the input, stop selecting
       setTimeout(function(){
-        evcell.select();
+        this.selectCell(evcell);
         this.singleCellEditingMode = false;
-      }, 10);
+      }.bind(this), 10);
     }
 
     this.dragOrigin = this.cellPosition(evcell);
@@ -354,7 +358,7 @@ var Xcellify = function(startupOptions){
       if( selSize.total == 1 ){
         var cursorSelSize = this.activeSelectionSize();
         if( !cursorSelSize ){
-          ev.target.select();
+          this.selectCell(ev.target);
         }else{
           this.singleCellEditingMode = true;
         }
