@@ -13,7 +13,7 @@ function popupimage(mylink, windowname)
 }
 
 function popOut(){
-	popupimage({href:chrome.extension.getURL('popup.html')+'#'+winid},"ColorPick");
+	popupimage({href:chrome.extension.getURL('popup.html')+'#'+winid},"Search API Query String Parser : Chrome Extension");
 	ev.preventDefault();
 }
 
