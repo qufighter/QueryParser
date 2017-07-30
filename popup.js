@@ -106,10 +106,10 @@ function row(qDelim,key,val){
 		]),
 		Cr.elm('label',{class:'eq xcellcell'},[
 			Cr.elm('span',{title:'Query Value'},[Cr.txt('=')]),
-			Cr.elm('input',{type:'hidden',class:'eq xcellinput',value:'='})
+			Cr.elm('input',{type:'hidden',class:'eq xcellinput',value:(typeof(value)=='undefined')?'=':''})
 		]),
 		Cr.elm('label',{class:'value xcellcell qsxcellcell'},[
-			Cr.elm('input',{class:'val xcellinput qsxcellinput',value:doDecodeURIComponent(val),events:[['keyup',queryValChange],['change',queryValChange]]})
+			Cr.elm('input',{class:'val xcellinput qsxcellinput',value:val?doDecodeURIComponent(val):'',events:[['keyup',queryValChange],['change',queryValChange]]})
 		]),
 		Cr.elm('a',{class:'link',title:'Remove Parameter',events:['click',removeRow]},[Cr.txt('-')])
 	];
@@ -144,6 +144,8 @@ function queryValChange(ev){
 			updateKeyValueFromArr(key, val, parts);
 		}
 	}
+	var equiv = val.parentNode.parentNode.querySelector('input.eq');
+	if( val.value ){ equiv.value = '='; }
 }
 
 function addRow(ev){
