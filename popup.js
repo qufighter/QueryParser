@@ -27,7 +27,10 @@ function doEncodeURIComponent(s){
 }
 
 function doDecodeURIComponent(s){
-	return decodeURIComponent(s);
+	try{
+		return decodeURIComponent(s);
+	}catch(e){}
+	return unescape(s);
 }
 
 //go button
@@ -205,7 +208,7 @@ function expandUrl(ev){
 }
 
 function dragOverElms(ev){
-	if( ev.target.type="button" ){
+	if( ev.target.type=="button" ){
 		addRow(ev);
 	}
 }
@@ -234,7 +237,7 @@ function parseQuery(query){
 		retKvps.push(qKeyVal);
 		iqsDelim='&';
 	}
-	return {qsArr:retKvps, qsElmArr: qKeyValElms}
+	return {qsArr:retKvps, qsElmArr: qKeyValElms};
 }
 
 function resetAll(){
@@ -252,7 +255,7 @@ function init(url){
 		parts[1] = parts.slice(1).join('?'); // "?" is allowed anywhere in the query part (name or value)
 	}
 
-	var url = parts[0];
+	url = parts[0];
 	var query = parts[1];
 	
 	if( query ){
@@ -355,7 +358,7 @@ function toggleXcellmodeBtnsOff(){
 
 var popoutMode=false;
 document.addEventListener('DOMContentLoaded', function () {
-	var q={active:true}
+	var q={active:true};
 
 	if(window.location.hash){
 		q.windowId=window.location.hash.replace('#','')-0;
