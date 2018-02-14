@@ -15,27 +15,27 @@ fi
 
 rm -fr build
 mkdir build
-mkdir build/1.0
+mkdir build
 
 echo "copying files"
 
-cp -r * build/1.0  2> /dev/null
+cp -r * build 2> /dev/null
 
 echo "cleaning up"
 #remove any build folder in build folder and build.sh
-rm -fr build/1.0/build*
-rm -fr build/1.0/$PROG.*.zip
-rm -fr build/1.0/.git
-rm -fr build/1.0/*-ff-extra.js
-rm -fr build/1.0/*-ff.html
-rm -fr build/1.0/*-ff.js
-rm -fr build/1.0/*-ff.css
-rm -fr build/1.0/chrome-api*
-rm -fr build/1.0/*.psd
-rm -fr build/1.0/*.ai
-rm -fr build/1.0/*.sh
-rm -fr build/1.0/*.awk
-rm -fr build/1.0/finsupport_*
+rm -fr build/build*
+rm -fr build/$PROG.*.zip
+rm -fr build/.git
+rm -fr build/*-ff-extra.js
+rm -fr build/*-ff.html
+rm -fr build/*-ff.js
+rm -fr build/*-ff.css
+rm -fr build/chrome-api*
+rm -fr build/*.psd
+rm -fr build/*.ai
+rm -fr build/*.sh
+rm -fr build/*.awk
+rm -fr build/finsupport_*
 
 echo "determining version number"
 vers=`cat manifest.json | awk -f build.awk`
@@ -43,6 +43,8 @@ vers=`cat manifest.json | awk -f build.awk`
 echo $vers
 
 cd build
+
+find . -name ".DS_Store" -delete
 
 echo "Creating zip"
 which zip
