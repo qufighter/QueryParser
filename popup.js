@@ -8,7 +8,7 @@ var iqsDelim='?';
 function popupimage(mylink, windowname)
 {
 	var w=Math.round(window.outerWidth*1.114),h=Math.round(window.outerHeight*1.15);
-	chrome.windows.create({url:mylink.href,width:w,height:h,focused:false,type:"panel"},function(win){});
+	chrome.windows.create({url:mylink.href,width:w,height:h,type:"panel"},function(win){});
 	return false;
 }
 
