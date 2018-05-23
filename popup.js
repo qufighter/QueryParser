@@ -242,7 +242,7 @@ function parseQuery(query){
 
 function resetAll(){
 	iqsDelim='?';
-	Cr.empty(document.body);
+	Cr.empty(document.getElementById('content'));
 }
 
 function init(url){
@@ -304,7 +304,8 @@ function init(url){
 				Cr.elm('input',{type:'checkbox',id:'encodeComponents'})
 			])
 		])
-	],document.body);
+	],document.getElementById('content'));
+	document.getElementById('cvs').height=1;
 }
 
 function doneXcell(){
@@ -358,6 +359,7 @@ function toggleXcellmodeBtnsOff(){
 
 var popoutMode=false;
 document.addEventListener('DOMContentLoaded', function () {
+
 	var q={active:true};
 
 	if(window.location.hash){
