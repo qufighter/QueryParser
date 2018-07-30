@@ -329,6 +329,8 @@ function xcellSelectAllConsecutiveMode(ev){
 		skipInvisibleCells: false,
 		delimitCells: "",
 		delimitRows: "",
+		tabReplacement:false,
+		quoteValue: function(v){return v},
 		selectionConfirmation: function(selSize,clipSize,cbf){cbf();}
 	});
 	toggleXcellmodeBtnsOn();
