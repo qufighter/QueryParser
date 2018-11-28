@@ -163,8 +163,13 @@ function sortQueries(ev){
 	arr.sort(function(a, b){
 		return a.querySelector('input.key').value.localeCompare(b.querySelector('input.key').value);
 	});
+	var concatenator = '?';
 	for( var x=0,l=arr.length; x<l; x++ ){
+		var mode = arr[x].querySelector('label.qmode');
+		mode.querySelector('span').innerText=concatenator;
+		mode.querySelector('input.qmode').value=concatenator;
 		qa.appendChild(arr[x]);
+		concatenator='&';
 	}
 	ev.preventDefault();
 	xcellRebuildIndex();
