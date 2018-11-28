@@ -12,7 +12,7 @@ function popupimage(mylink, windowname)
 	return false;
 }
 
-function popOut(){
+function popOut(ev){
 	popupimage({href:chrome.extension.getURL('popup.html')+'#'+winid},"Search API Query String Parser : Chrome Extension");
 	ev.preventDefault();
 }
@@ -157,6 +157,19 @@ function addRow(ev){
 	xcellRebuildIndex();
 }
 
+function sortQueries(ev){
+	var qa=document.getElementById('query_area');
+	var arr = Array.prototype.slice.call(qa.querySelectorAll('.qrow'), 0);
+	arr.sort(function(a, b){
+		return a.querySelector('input.key').value.localeCompare(b.querySelector('input.key').value);
+	});
+	for( var x=0,l=arr.length; x<l; x++ ){
+		qa.appendChild(arr[x]);
+	}
+	ev.preventDefault();
+	xcellRebuildIndex();
+}
+
 function removeRow(ev){
 	ev.target.parentNode.parentNode.removeChild(ev.target.parentNode);
 	ev.preventDefault();
@@ -284,6 +297,7 @@ function init(url){
 			Cr.elm('div',{id:'query_area'},qKeyValElms),
 			Cr.elm('div',{id:'qctrl'},[
 				Cr.elm('a',{events:[['click',addRow]],dragable:true,title:'Add Query Param',class:'rfloat link',href:'#'},[Cr.txt('+Query')]),
+				Cr.elm('a',{events:[['click',sortQueries]],dragable:false,title:'Sort Query Params',class:'rfloat link',href:'#'},[Cr.txt('Abc')]),
 				Cr.elm('span',{id:'xcellcontrols'},[
 					Cr.elm('a',{events:['click',xcellSelectAllConsecutiveMode],title:'Select consecutive cells (not only query parameters, includes connective ?,&,=,/,#)',class:'rfloat link rotate90',href:'#'},[Cr.txt('\u229F')]),
 					Cr.elm('a',{events:['click',xcellMode],title:'Xcellify query parameters to select, copy and paste several tab & newline delimited query parameters into a spreadsheet,\nor to select one column only.',class:'rfloat link',href:'#'},[Cr.txt('\u229E')])
