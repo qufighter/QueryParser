@@ -70,7 +70,7 @@ function navigate(ev, newWindow){
 	}
 
 	console.log(oUrl);
-	if( newWindow ){
+	if( newWindow ){ // TODO: if our orig tab is closed, we newWindow true too... for now you can middle click GET to open results in a new tab anywyay...
 		chrome.tabs.create({url:oUrl,active:true});
 	}else{
 		chrome.tabs.update(tabid,{url:oUrl,active:true});
@@ -85,6 +85,8 @@ function possiblyNavigate(ev){
 }
 
 function revealTab(ev){
+	// TODO: catch failurs here... if our tab is closed, lets make a new tab?????
+	//  	(possibly more important on GET than here...)
 	chrome.tabs.update(tabid,{active:true});
 	chrome.windows.update(winid,{focused:true}); // drawAttention:true
 	chrome.windows.getCurrent({}, function(window){
