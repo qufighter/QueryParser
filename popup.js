@@ -69,7 +69,7 @@ function navigate(ev, newWindow){
 		oUrl+='#'+document.getElementById('hash').value;
 	}
 
-	console.log(oUrl);
+	//console.log(oUrl);
 	if( newWindow || !tabid ){
 		chrome.tabs.create({url:oUrl,active:true}, function(newTab){
 			if( !tabid ){
