@@ -318,8 +318,8 @@ function init(url){
 				Cr.elm('a',{events:[['click',addRow]],dragable:true,title:'Add Query Param',class:'rfloat link',href:'#'},[Cr.txt('+Query')]),
 				Cr.elm('a',{events:[['click',sortQueries]],dragable:false,title:'Sort Query Params',class:'rfloat link',href:'#'},[Cr.txt('Abc')]),
 				Cr.elm('span',{id:'xcellcontrols'},[
-					Cr.elm('a',{events:['click',xcellSelectAllConsecutiveMode],title:'Select consecutive cells (not only query parameters, includes connective ?,&,=,/,#)',class:'rfloat link',href:'#'},[Cr.elm('span',{class:'rotate90'},[Cr.txt('\u229E')])]),
-					Cr.elm('a',{events:['click',xcellMode],title:'Xcellify query parameters to select, copy and paste several tab & newline delimited query parameters into a spreadsheet,\nor to select one column only.',class:'rfloat link',href:'#'},[Cr.elm('span',{class:'rotate90'},[Cr.txt('\u229F')])])
+					Cr.elm('a',{events:['click',xcellSelectAllConsecutiveMode],title:'Select consecutive cells (not only query parameters, includes connective ?,&,=,/,#)',class:'rfloat link',href:'#'},[Cr.elm('span',{class:'rotate90'},[Cr.txt('\u229F')])]),
+					Cr.elm('a',{events:['click',xcellMode],title:'Xcellify query parameters to select, copy and paste several tab & newline delimited query parameters into a spreadsheet,\nor to select one column only.',class:'rfloat link',href:'#'},[Cr.elm('span',{class:'rotate90'},[Cr.txt('\u229E')])])
 				]),
 				Cr.elm('a',{id:'donexcell',events:['click',doneXcell],title:'Return to normal mode',class:'rfloat link hidden',href:'#'},[Cr.txt('\u2713')])
 			]),
