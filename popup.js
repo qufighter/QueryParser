@@ -3,17 +3,21 @@ var nbsp='\u00A0';
 var xcellController=null;
 var iqsDelim='?';
 
-// tab index is supported by href=# so be sure to ev.preventDefault()
+// tab index is supported by href=# so be sure to ev.preventDefault() (test in popup!!!!)
 
 function popupimage(mylink, windowname)
 {
-	var w=Math.round(window.outerWidth*1.114),h=Math.round(window.outerHeight*1.15);
-	chrome.windows.create({url:mylink.href,width:w,height:h,type:"panel"},function(win){});
+	var w=Math.round(window.outerWidth*1.15),h=Math.round(window.outerHeight*1.25);
+	chrome.windows.create({url:mylink.href,width:w,height:h,focused:false,type:"panel"},function(win){});
 	return false;
 }
 
-function popOut(ev){
-	popupimage({href:chrome.extension.getURL('popup.html')+'#'+winid},"Search API Query String Parser : Chrome Extension");
+function popOutHash(){
+	return '#'+winid+'-'+tabid;
+}
+
+function popOut(){
+	popupimage({href:chrome.extension.getURL('popup.html')+popOutHash()},"Search API Query String Parser : Chrome Extension");
 	ev.preventDefault();
 }
 
@@ -179,6 +183,15 @@ function removeRow(ev){
 	ev.target.parentNode.parentNode.removeChild(ev.target.parentNode);
 	ev.preventDefault();
 	xcellRebuildIndex();
+	ensureFirstQueryRowDelimiterValid();
+}
+
+function ensureFirstQueryRowDelimiterValid(){
+	var rows=document.getElementById('query_area').childNodes;
+	if( rows.length ){
+		rows[0].querySelector('.qmode span').innerText = '?';
+		rows[0].querySelector('.qmode input.qmode').value = '?';
+	}
 }
 
 function removeUricomponent(ev){
@@ -236,9 +249,10 @@ function mouseOverElms(ev){
 	// }
 }
 function clickElms(ev){
-	if( ev.target.nodeName == "SPAN" ){
-		ev.target.nextSibling.select();
-	}
+	// I think the intention here, is clickign the label will select the coresponding field... 
+	// if( ev.target.nodeName == "SPAN" ){
+	// 	ev.target.nextSibling.select();
+	// }
 }
 
 function parseQuery(query){
@@ -304,8 +318,8 @@ function init(url){
 				Cr.elm('a',{events:[['click',addRow]],dragable:true,title:'Add Query Param',class:'rfloat link',href:'#'},[Cr.txt('+Query')]),
 				Cr.elm('a',{events:[['click',sortQueries]],dragable:false,title:'Sort Query Params',class:'rfloat link',href:'#'},[Cr.txt('Abc')]),
 				Cr.elm('span',{id:'xcellcontrols'},[
-					Cr.elm('a',{events:['click',xcellSelectAllConsecutiveMode],title:'Select consecutive cells (not only query parameters, includes connective ?,&,=,/,#)',class:'rfloat link rotate90',href:'#'},[Cr.txt('\u229F')]),
-					Cr.elm('a',{events:['click',xcellMode],title:'Xcellify query parameters to select, copy and paste several tab & newline delimited query parameters into a spreadsheet,\nor to select one column only.',class:'rfloat link',href:'#'},[Cr.txt('\u229E')])
+					Cr.elm('a',{events:['click',xcellSelectAllConsecutiveMode],title:'Select consecutive cells (not only query parameters, includes connective ?,&,=,/,#)',class:'rfloat link',href:'#'},[Cr.elm('span',{class:'rotate90'},[Cr.txt('\u229E')])]),
+					Cr.elm('a',{events:['click',xcellMode],title:'Xcellify query parameters to select, copy and paste several tab & newline delimited query parameters into a spreadsheet,\nor to select one column only.',class:'rfloat link',href:'#'},[Cr.elm('span',{class:'rotate90'},[Cr.txt('\u229F')])])
 				]),
 				Cr.elm('a',{id:'donexcell',events:['click',doneXcell],title:'Return to normal mode',class:'rfloat link hidden',href:'#'},[Cr.txt('\u2713')])
 			]),
@@ -325,12 +339,19 @@ function init(url){
 		])
 	],document.getElementById('content'));
 	document.getElementById('cvs').height=1;
+
+	if( popoutMode ){
+		document.querySelectorAll('a[href="#"]').forEach(function(e){
+			e.href = popOutHash();
+		});
+	}
 }
 
-function doneXcell(){
+function doneXcell(ev){
 	xcellController.destroy();
 	xcellController = null;
 	toggleXcellmodeBtnsOff();
+	ev.preventDefault();
 }
 
 function xcellRebuildIndex(){
@@ -338,6 +359,7 @@ function xcellRebuildIndex(){
 }
 
 function xcellSelectAllConsecutiveMode(ev){
+	ev.preventDefault();
 	if( xcellController ) return doneXcell(); // should be impossible to reach here
 	xcellController = new Xcellify({
 		containerElm: document.querySelector('.sheet'),
@@ -356,6 +378,7 @@ function xcellSelectAllConsecutiveMode(ev){
 }
 
 function xcellMode(ev){
+	ev.preventDefault();
 	if( xcellController ) return doneXcell(); // should be impossible to reach here
 	xcellController = new Xcellify({
 		containerElm: document.querySelector('#query_area'),
@@ -379,12 +402,28 @@ function toggleXcellmodeBtnsOff(){
 }
 
 var popoutMode=false;
+
+function tabGottenCb(tab){
+	tabsGottenCb([tab])
+}
+
+function tabsGottenCb(tabs){
+	tabid=tabs[0].id;
+	winid=tabs[0].windowId;
+	init(tabs[0].url);
+}
+
 document.addEventListener('DOMContentLoaded', function () {
 
 	var q={active:true};
 
 	if(window.location.hash){
-		q.windowId=window.location.hash.replace('#','')-0;
+		var hashRaw = window.location.hash.replace('#','');
+		var hashPar = hashRaw.split('-');
+		q.windowId=hashPar[0]-0;
+		if( hashPar[1] ){
+			q.tabId=hashPar[1]-0;
+		}
 		popoutMode=true;
 	}else{
 		q.currentWindow=true;
@@ -394,9 +433,9 @@ document.addEventListener('DOMContentLoaded', function () {
 		if( ev.keyCode == 13) navigate(ev);
 	});
 
-	chrome.tabs.query(q, function(tabs){
-		tabid=tabs[0].id;
-		winid=tabs[0].windowId;
-		init(tabs[0].url);
-	});
+	if( q.tabId ){
+		chrome.tabs.get(q.tabId, tabGottenCb);
+	}else{
+		chrome.tabs.query(q, tabsGottenCb);
+	}
 });
