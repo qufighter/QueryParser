@@ -1,4 +1,4 @@
-var tabid,winid;
+var tabid=null,winid=null;
 var nbsp='\u00A0';
 var xcellController=null;
 var iqsDelim='?';
@@ -70,11 +70,28 @@ function navigate(ev, newWindow){
 	}
 
 	console.log(oUrl);
-	if( newWindow ){ // TODO: if our orig tab is closed, we newWindow true too... for now you can middle click GET to open results in a new tab anywyay...
-		chrome.tabs.create({url:oUrl,active:true});
+	if( newWindow || !tabid ){
+		chrome.tabs.create({url:oUrl,active:true}, function(newTab){
+			if( !tabid ){
+				extractDetailsFromNewTab(newTab);
+			}
+		});
 	}else{
-		chrome.tabs.update(tabid,{url:oUrl,active:true});
+		chrome.tabs.update(tabid,{url:oUrl,active:true}, function(tab){
+			if(!tab || chrome.runtime.lastError ){
+				// our orig tab is closed, create a new one!
+				chrome.tabs.create({url:oUrl,active:true}, function(newTab){
+					extractDetailsFromNewTab(newTab);
+				});
+			}
+		});
 	}
+}
+
+function extractDetailsFromNewTab(newTab){
+	tabid = newTab.id;
+	winid = newTab.windowId;
+	underlyingTabChanged();
 }
 
 function possiblyNavigate(ev){
@@ -85,12 +102,15 @@ function possiblyNavigate(ev){
 }
 
 function revealTab(ev){
-	// TODO: catch failurs here... if our tab is closed, lets make a new tab?????
-	//  	(possibly more important on GET than here...)
-	chrome.tabs.update(tabid,{active:true});
-	chrome.windows.update(winid,{focused:true}); // drawAttention:true
-	chrome.windows.getCurrent({}, function(window){
-		chrome.windows.update(window.id,{focused:true});
+	chrome.tabs.update(tabid,{active:true}, function(t){
+		if( !t || chrome.runtime.lastError ){
+			console.warn('the origional tab was closed!  click `Get` to open a new tab.');
+		}else if( winid ){
+			chrome.windows.update(winid,{focused:true}); // drawAttention:true
+			chrome.windows.getCurrent({}, function(window){
+				chrome.windows.update(window.id,{focused:true});
+			});
+		}
 	});
 	ev.preventDefault();
 }
@@ -342,8 +362,13 @@ function init(url){
 	],document.getElementById('content'));
 	document.getElementById('cvs').height=1;
 
-	if( popoutMode ){
-		document.querySelectorAll('a[href="#"]').forEach(function(e){
+	underlyingTabChanged();
+}
+
+function underlyingTabChanged(){
+	if( popoutMode && tabid && winid ){
+		window.location.hash=popOutHash();
+		document.querySelectorAll('a[href^="#"]').forEach(function(e){
 			e.href = popOutHash();
 		});
 	}
@@ -410,9 +435,11 @@ function tabGottenCb(tab){
 }
 
 function tabsGottenCb(tabs){
-	tabid=tabs[0].id;
-	winid=tabs[0].windowId;
-	init(tabs[0].url);
+	if( tabs[0] ){
+		tabid=tabs[0].id;
+		winid=tabs[0].windowId;
+	}
+	init(tabs[0] ? tabs[0].url : 'about:blank');
 }
 
 document.addEventListener('DOMContentLoaded', function () {
