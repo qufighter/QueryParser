@@ -217,7 +217,16 @@ function ensureFirstQueryRowDelimiterValid(){
 }
 
 function removeUricomponent(ev){
-	ev.target.parentNode.parentNode.removeChild(ev.target.parentNode);
+	var container=ev.target.closest('.path-input');
+	var seperator=container.previousElementSibling;
+	var parent = container.parentNode;
+	// todo, record frament for undo...
+	while(seperator && seperator.nodeName != 'SPAN' ){ // loop untill we find the next span.path-input removing all labels between
+		var toremove = seperator;
+		seperator=seperator.previousElementSibling;
+		parent.removeChild(toremove);
+	}
+	parent.removeChild(container);
 	ev.preventDefault();
 	xcellRebuildIndex();
 }
@@ -232,32 +241,52 @@ function expandUrl(ev){
 	var delim = '';
 	var urls = url.split("/");
 	for( var i=0,l=urls.length; i<l; i++ ){
-		fragment.appendChild(
-			Cr.elm('label',{class:'xcellcell'},[
-				Cr.elm('span',{title:'Url Path'},[Cr.txt(delim)]),
-				Cr.elm('input',{type:'hidden',class:'xcellinput',value:delim})
-			])
-		);
-		if( !urls[i] ){
-			fragment.appendChild(
-				Cr.elm('label',{class:'xcellcell'},[
-					//Cr.elm('span',{title:'Url Path'},[Cr.txt(delim)]),
-					Cr.elm('input',{class:'uricomponent xcellinput',style:!urls[i]?'display:none;':'',value:(urls[i])})
-				])
-			);
-			continue;
-		}
-		fragment.appendChild(Cr.elm('span',{},[Cr.elm('label',{class:'xcellcell'},[
-			//Cr.elm('span',{title:'Url Path'},[Cr.txt(delim)]),
-			Cr.elm('input',{class:'uricomponent xcellinput',style:!urls[i]?'display:none;':'',value:doDecodeURIComponent(urls[i])}),
-			Cr.elm('a',{class:'link',title:'Remove',events:['click',removeUricomponent],href:'#'},[Cr.txt('-')]),
-			Cr.elm('br')
-		])]));
+		addPathRowToFragment(fragment, delim, urls[i], i<urls.length-1);
 		delim = '/';
 	}
-	dest.insertBefore(Cr.elm('div',{class:'wrap'},[fragment]), dest.firstChild);
+	dest.insertBefore(Cr.elm('div',{id:'path-components',class:'wrap',childNodes:[
+		Cr.elm('div',{class:'path-ctrs', childNodes:[
+			Cr.elm('a',{class:'link rfloat',title:'Remove Parameter',events:['click',addPathComponent]},[Cr.txt('+Path')])
+		]}),
+		fragment
+	]}), dest.firstChild);
+
+	var firstRemover = dest.querySelector('.remove-path-component');
+	firstRemover.parentNode.removeChild(firstRemover); // removing this one will break whatever protocol seperator is in use, better to leave it
+
 	ev.preventDefault();
 	xcellRebuildIndex();
+}
+
+function addPathRowToFragment(fragment, delim, pathComponent, skip_empty){
+	var urlComponentEmpty = !pathComponent && skip_empty; // it has to be empty component '', that isn't at the end...
+	fragment.appendChild(
+		Cr.elm('label',{class:'xcellcell'},[
+			Cr.elm('span',{title:'Url Path'},[Cr.txt(delim)]),
+			Cr.elm('input',{type:'hidden',class:'xcellinput',value:delim})
+		])
+	);
+	if( urlComponentEmpty ){
+		fragment.appendChild(
+			Cr.elm('label',{class:'xcellcell extra-separator'},[
+				//Cr.elm('span',{title:'Url Path'},[Cr.txt(delim)]),
+				Cr.elm('input',{class:'uricomponent xcellinput',style:'display:none;',value:''})
+			])
+		);
+		return
+	}
+	fragment.appendChild(Cr.elm('span',{class:'path-input'},[Cr.elm('label',{class:'xcellcell'},[
+		//Cr.elm('span',{title:'Url Path'},[Cr.txt(delim)]),
+			Cr.elm('input',{class:'uricomponent xcellinput',style:urlComponentEmpty?'display:none;':'',value:doDecodeURIComponent(pathComponent)}),
+		delim=='/'?Cr.elm('a',{class:'link remove-path-component',title:'Remove',events:['click',removeUricomponent]},[Cr.txt('-')]) : 0,
+		Cr.elm('br')
+	])]));
+}
+
+function addPathComponent(ev){
+	var fragment = Cr.frag();
+	addPathRowToFragment(fragment, '/', '', false)
+	document.getElementById('path-components').appendChild(fragment);
 }
 
 function dragOverElms(ev){
