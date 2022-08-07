@@ -15,7 +15,7 @@
       "128": "img/icon128.png"
    },
    "permissions": [
-      "activeTab", "storage"
+      "activeTab"
    ],
    "version": "0.0.1.17"
 }
