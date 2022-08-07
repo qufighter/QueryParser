@@ -1,8 +1,8 @@
 {
-   "manifest_version": 2,
+   "manifest_version": 3,
    "description": "View and edit long URL search query string with relative ease",
    "name": "Search API Query String Parser",
-   "browser_action" : {
+   "action" : {
      "default_icon" : "img/icon19.png",
      "default_title": "Parse Query String",
      "default_popup": "popup.html"
@@ -15,7 +15,7 @@
       "128": "img/icon128.png"
    },
    "permissions": [
-      "tabs", "storage"
+      "activeTab", "storage"
    ],
    "version": "0.0.1.17"
 }
